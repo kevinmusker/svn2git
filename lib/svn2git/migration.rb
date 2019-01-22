@@ -50,6 +50,7 @@ module Svn2Git
       options[:branches] = []
       options[:tags] = []
       options[:exclude] = []
+      options[:ignorepaths] = nil
       options[:revision] = nil
       options[:username] = nil
       options[:password] = nil
@@ -130,6 +131,10 @@ module Svn2Git
           options[:exclude] << regex
         end
 
+        opts.on('--ignore-paths REGEX', 'Specify a Perl regular expression to filter repository paths; is sent directly to git svn init') do |regex|
+          options[:ignorepaths] = regex
+        end
+
         opts.on('-v', '--verbose', 'Be verbose in logging -- useful for debugging issues') do
           options[:verbose] = true
         end
@@ -175,6 +180,7 @@ module Svn2Git
       rootistrunk = @options[:rootistrunk]
       authors = @options[:authors]
       exclude = @options[:exclude]
+      ignorepaths = @options[:ignorepaths]
       revision = @options[:revision]
       username = @options[:username]
       password = @options[:password]
@@ -219,6 +225,10 @@ module Svn2Git
           end
         end
 
+        unless ignorepaths.nil?
+          cmd += "--ignore-paths='#{ignorepaths}' "
+        end
+
         cmd += @url
 
         run_command(cmd, true, true)
@@ -226,7 +236,7 @@ module Svn2Git
 
       run_command("#{git_config_command} svn.authorsfile #{authors}") unless authors.nil?
 
-      cmd = "git svn fetch "
+      cmd = "git svn fetch --log-window-size=1000 "
       unless revision.nil?
         range = revision.split(":")
         range[1] = "HEAD" unless range[1]
